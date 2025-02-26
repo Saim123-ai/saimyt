@@ -1,0 +1,181 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Downloader</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            text-align: center; 
+            padding: 20px; 
+            background-color: #1e1e1e; 
+            color: white;
+            transition: background 0.3s ease;
+        }
+        .container {
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+            background: #2a2a2a;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(255, 255, 255, 0.1);
+        }
+        input, button { 
+            padding: 10px; 
+            margin: 10px; 
+            border: none;
+            border-radius: 5px;
+        }
+        button { 
+            cursor: pointer; 
+            background: #ff9800; 
+            color: white; 
+            font-weight: bold;
+        }
+        img { 
+            max-width: 100%; 
+            margin-top: 20px; 
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+        }
+        .section { 
+            margin-top: 20px; 
+            padding: 15px; 
+            border-radius: 10px;
+            background: #333; 
+            box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.2);
+            text-align: center;
+        }
+        .btn {
+            display: block;
+            background: #ff9800;
+            color: white;
+            padding: 10px;
+            margin: 5px 0;
+            text-decoration: none;
+            border-radius: 5px;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.1);
+        }
+        .toggle-mode {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 10px;
+            background: #ff9800;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .light-mode {
+            background: white;
+            color: black;
+        }
+        .light-mode .section {
+            background: #ddd;
+            color: black;
+        }
+        .loader {
+            display: none;
+            margin: auto;
+            border: 5px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 5px solid #ff9800;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="toggle-mode" onclick="toggleMode()">Toggle Mode</div>
+    <div class="container">
+        <h1>YouTube Video Downloader</h1>
+        <input type="text" id="videoUrl" placeholder="Enter YouTube Video URL">
+        <button onclick="fetchVideo()">Fetch Video</button>
+        
+        <div class="loader" id="loader"></div>
+        
+        <h2 id="title"></h2>
+        <img id="thumbnail" src="" alt="Thumbnail" style="display: none;">
+
+        <div id="audioSection" class="section" style="display: none;">
+            <h3>🎵 Audio Only</h3>
+            <div id="audioOptions"></div>
+        </div>
+
+        <div id="videoSection" class="section" style="display: none;">
+            <h3>🎬 Video with Audio</h3>
+            <div id="videoOptions"></div>
+        </div>
+    </div>
+    <script>
+        function toggleMode() {
+            document.body.classList.toggle("light-mode");
+        }
+        function fetchVideo() {
+            let url = document.getElementById("videoUrl").value;
+            if (!url) {
+                alert("Please enter a YouTube URL");
+                return;
+            }
+            
+            document.getElementById("loader").style.display = "block";
+            
+            fetch(`/fetch/?url=${encodeURIComponent(url)}`)
+                .then(response => response.json())
+                .then(data => {
+                    document.getElementById("loader").style.display = "none";
+                    if (data.error) {
+                        alert("Error: " + data.error);
+                        return;
+                    }
+                    document.getElementById("title").innerText = data.title;
+                    document.getElementById("thumbnail").src = data.thumbnail;
+                    document.getElementById("thumbnail").style.display = "block";
+                    let audioOptions = document.getElementById("audioOptions");
+                    let videoOptions = document.getElementById("videoOptions");
+                    audioOptions.innerHTML = "";
+                    videoOptions.innerHTML = "";
+                    if (data.audio_streams.length > 0) {
+                        document.getElementById("audioSection").style.display = "block";
+                        data.audio_streams.forEach(audio => {
+                            let btn = document.createElement("a");
+                            btn.href = audio.url;
+                            btn.innerText = "🎧 Download Audio (" + audio.bitrate + ")";
+                            btn.target = "_blank";
+                            btn.className = "btn";
+                            audioOptions.appendChild(btn);
+                        });
+                    } else {
+                        document.getElementById("audioSection").style.display = "none";
+                    }
+                    if (data.video_streams.length > 0) {
+                        document.getElementById("videoSection").style.display = "block";
+                        data.video_streams.forEach(video => {
+                            let btn = document.createElement("a");
+                            btn.href = video.url;
+                            btn.innerText = "📹 Download Video (" + video.resolution + ")";
+                            btn.target = "_blank";
+                            btn.className = "btn";
+                            videoOptions.appendChild(btn);
+                        });
+                    } else {
+                        document.getElementById("videoSection").style.display = "none";
+                    }
+                })
+                .catch(error => {
+                    document.getElementById("loader").style.display = "none";
+                    console.error("Error fetching video:", error);
+                });
+        }
+    </script>
+</body>
+</html>
